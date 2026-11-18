@@ -1,0 +1,41 @@
+{
+  "defaultSetting": "complex",
+  "settings": {
+    "default": {
+      "label": "Default",
+      "agent": "local-default",
+      "model": "openai/gpt-6.2-sol",
+      "variant": "medium",
+      "coder": "coding-terra",
+      "codingModel": "openai/gpt-6.1-terra",
+      "codingVariant": "medium"
+    },
+    "more": {
+      "label": "More intelligence",
+      "agent": "local-more",
+      "model": "openai/gpt-6.2-sol",
+      "variant": "high",
+      "coder": "medium",
+      "codingModel": "openai/gpt-6.2-sol",
+      "codingVariant": "medium"
+    },
+    "complex": {
+      "label": "Complex",
+      "agent": "local-complex",
+      "model": "openai/gpt-6.2-astra",
+      "variant": "high",
+      "coder": "complex",
+      "codingModel": "openai/gpt-6.2-sol",
+      "codingVariant": "high"
+    },
+    "frontier": {
+      "label": "Frontier",
+      "agent": "local-frontier",
+      "model": "anthropic/claude-fable-5-2",
+      "variant": "max",
+      "coder": "coding-astra",
+      "codingModel": "openai/gpt-6.2-astra",
+      "codingVariant": "high"
+    }
+  }
+}

@@ -1,0 +1,67 @@
+diff --git a/src/router/config.ts b/src/router/config.ts
+index 4d821dd4..e6858445 100644
+--- a/src/router/config.ts
++++ b/src/router/config.ts
+@@ -608,8 +608,16 @@ export function configPath(): string {
+  * bundled tiers.json, which sits in the cache dir and is overwritten on every
+  * update. Anything here is deep-merged over the bundled config.
+  */
++function globalOpencodeConfigDirectory(): string {
++  const configHome = process.env.XDG_CONFIG_HOME;
++  return join(
++    configHome && isAbsolute(configHome) ? configHome : join(homedir(), ".config"),
++    "opencode",
++  );
++}
++
+ export function overridePath(): string {
+-  return join(homedir(), ".config", "opencode", OVERRIDE_FILENAME);
++  return join(globalOpencodeConfigDirectory(), OVERRIDE_FILENAME);
+ }
+ 
+ /**
+@@ -753,12 +761,7 @@ function walkForProjectOverride(startDir: string): string | undefined {
+ }
+ 
+ export function statePath(): string {
+-  return join(
+-    homedir(),
+-    ".config",
+-    "opencode",
+-    "opencode-model-router.state.json",
+-  );
++  return join(globalOpencodeConfigDirectory(), "opencode-model-router.state.json");
+ }
+ 
+ export function resolvePresetName(
+diff --git a/test/unit/router-config-xdg-upgrade.test.ts b/test/unit/router-config-xdg-upgrade.test.ts
+new file mode 100644
+index 00000000..9ea000e1
+--- /dev/null
++++ b/test/unit/router-config-xdg-upgrade.test.ts
+@@ -0,0 +1,25 @@
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { homedir, tmpdir } from "node:os";
++import { join } from "node:path";
++import { overridePath, statePath } from "../../src/router/config";
++
++afterEach(() => vi.unstubAllEnvs());
++
++describe("upgrade: isolate router config and state", () => {
++  it("redirects both global paths into the selected XDG directory", () => {
++    const trial = join(tmpdir(), "router-upgrade-config-fixture");
++    vi.stubEnv("XDG_CONFIG_HOME", trial);
++    expect(overridePath()).toBe(join(trial, "opencode", "opencode-model-router.overrides.jsonc"));
++    expect(statePath()).toBe(join(trial, "opencode", "opencode-model-router.state.json"));
++    expect(overridePath()).not.toBe(join(homedir(), ".config", "opencode", "opencode-model-router.overrides.jsonc"));
++  });
++  it("retains the existing default when XDG_CONFIG_HOME is unset", () => {
++    vi.stubEnv("XDG_CONFIG_HOME", undefined);
++    expect(overridePath()).toBe(join(homedir(), ".config", "opencode", "opencode-model-router.overrides.jsonc"));
++    expect(statePath()).toBe(join(homedir(), ".config", "opencode", "opencode-model-router.state.json"));
++  });
++  it("ignores a relative XDG_CONFIG_HOME", () => {
++    vi.stubEnv("XDG_CONFIG_HOME", "relative/config");
++    expect(statePath()).toBe(join(homedir(), ".config", "opencode", "opencode-model-router.state.json"));
++  });
++});

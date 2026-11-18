@@ -1,0 +1,188 @@
+// Shared workers for paired oc_local settings. Primary agents choose the coding worker.
+// Cost ratios are Artificial Analysis cost per task relative to @fast (2026-11-18), not billing; OpenAI is on a flat plan.
+{
+  "activePreset": "balanced",
+  "activeMode": "normal",
+  "presets": {
+    "balanced": {
+      "fast": {
+        "model": "openai/gpt-6.1-terra",
+        "variant": "low",
+        "costRatio": 1,
+        "steps": 30,
+        "description": "Tier 01 — Default: GPT-6.1 Terra LOW for exploration and straightforward tasks",
+        "readOnly": true,
+        "whenToUse": [
+          "Codebase exploration",
+          "Search, read, and documentation lookup",
+          "Straightforward read-only tasks"
+        ]
+      },
+      "medium": {
+        "model": "openai/gpt-6.2-sol",
+        "variant": "medium",
+        "costRatio": 5.86,
+        "steps": 50,
+        "description": "Tier 02 — More intelligence: GPT-6.2 Sol MEDIUM for standard implementation",
+        "whenToUse": [
+          "Routine implementation and bug fixes",
+          "Focused refactoring and tests",
+          "Tasks that exceed the default tier"
+        ]
+      },
+      "complex": {
+        "model": "openai/gpt-6.2-sol",
+        "variant": "high",
+        "costRatio": 8,
+        "steps": 90,
+        "description": "Tier 03 — Complex tasks: GPT-6.2 Sol HIGH for difficult coding and analysis",
+        "prompt": "You are @complex, the third of four tiers, using GPT-6.2 Sol HIGH. Handle complex implementation, multi-file debugging, architecture, security review, and difficult analysis. If this tier is insufficient, return ESCALATE with evidence to the main agent. Do not call @heavy yourself. Execute the assigned task yourself without delegating. Follow project instructions and use the tools actually available to you. Make focused changes, verify them with relevant checks, and distinguish observed results from assumptions. Return DONE: with changes and verification, NEED MORE: with the missing context, or ESCALATE: with the failed approaches and reason to use the next tier.",
+        "whenToUse": [
+          "Complex implementation and debugging",
+          "Multi-file reasoning and architecture",
+          "Security review and root-cause analysis"
+        ]
+      },
+      "heavy": {
+        "model": "anthropic/claude-fable-5-2",
+        "variant": "max",
+        "costRatio": 379.14,
+        "steps": 120,
+        "description": "Tier 04 — Frontier: Claude Fable 5.2 MAX for the hardest work",
+        "prompt": "You are @heavy, the frontier fourth tier, using Claude Fable 5.2 MAX. Handle the hardest reasoning, critical architecture, and problems unresolved by @complex. Use the evidence and prior attempts supplied in the dispatch; do not repeat failed approaches without new evidence. Execute the assigned task yourself without delegating. Follow project instructions and use the tools actually available to you. Make focused changes, verify them with relevant checks, and distinguish observed results from assumptions. Return DONE: with changes and verification, NEED MORE: with the missing context, or ESCALATE: with the failed approaches and reason to use the next tier.",
+        "whenToUse": [
+          "Frontier-level reasoning",
+          "Problems unresolved by Sol HIGH",
+          "Explicit requests for the strongest tier"
+        ]
+      }
+    }
+  },
+  "rules": [
+    "The selected primary agent determines the main model and default coding worker: local-default → Sol MEDIUM + @coding-terra (Terra MEDIUM); local-more → Sol HIGH + @medium (Sol MEDIUM); local-complex → Astra HIGH + @complex (Sol HIGH); local-frontier → Fable MAX + @coding-astra (Astra HIGH). Build/Plan aliases follow the launch setting.",
+    "Use @fast (Terra LOW, read-only) for exploration in every setting. @coding-terra (Default) and @coding-astra (Frontier) are separate writable subagents.",
+    "The stock Task example lists only three names; @complex, @coding-terra and @coding-astra are also valid subagents. Follow the pairing in the primary agent prompt instead of a universal @medium coding default.",
+    "The main agent owns planning, coordination, review, and final judgment. Delegate bounded coding to its paired worker; finish tiny tasks directly when delegation adds overhead.",
+    "When coding requires the main model capability, handle it directly or delegate to a same-model worker. Do not silently switch the main model.",
+    "Fable MAX is reserved for local-frontier or an explicit user selection of @heavy. Other primary settings cannot autonomously call @heavy.",
+    "Provide context and prior attempts to workers, run relevant checks, and report uncertainty.",
+    "Read caps for registered tiers: fast=8, medium=5, complex=5, heavy=3; CAP:N overrides, CAP:none requires a reason.",
+    "Router preset balanced is the shared worker palette. Use Tab to choose local-default/local-more/local-complex/local-frontier, or launch oc_local --setting NAME to choose a paired setting."
+  ],
+  "taskPatterns": {
+    "fast": [
+      "read-only-exploration",
+      "search",
+      "grep",
+      "read",
+      "git-info"
+    ],
+    "medium": [
+      "coding-worker-for-local-more"
+    ],
+    "complex": [
+      "coding-worker-for-local-complex",
+      "same-model-complex-work"
+    ],
+    "heavy": [
+      "explicit-frontier-only"
+    ]
+  },
+  "tierCaps": {
+    "fast": 8,
+    "medium": 5,
+    "complex": 5,
+    "heavy": 3
+  },
+  "modes": {
+    "normal": {
+      "defaultTier": "medium",
+      "description": "Selected primary controls models; normal adjusts work style only",
+      "overrideRules": [
+        "The selected primary agent determines the main model and default coding worker: local-default → Sol MEDIUM + @coding-terra (Terra MEDIUM); local-more → Sol HIGH + @medium (Sol MEDIUM); local-complex → Astra HIGH + @complex (Sol HIGH); local-frontier → Fable MAX + @coding-astra (Astra HIGH). Build/Plan aliases follow the launch setting.",
+        "Use @fast (Terra LOW, read-only) for exploration in every setting. @coding-terra (Default) and @coding-astra (Frontier) are separate writable subagents.",
+        "The stock Task example lists only three names; @complex, @coding-terra and @coding-astra are also valid subagents. Follow the pairing in the primary agent prompt instead of a universal @medium coding default.",
+        "The main agent owns planning, coordination, review, and final judgment. Delegate bounded coding to its paired worker; finish tiny tasks directly when delegation adds overhead.",
+        "When coding requires the main model capability, handle it directly or delegate to a same-model worker. Do not silently switch the main model.",
+        "Fable MAX is reserved for local-frontier or an explicit user selection of @heavy. Other primary settings cannot autonomously call @heavy.",
+        "Provide context and prior attempts to workers, run relevant checks, and report uncertainty.",
+        "Read caps for registered tiers: fast=8, medium=5, complex=5, heavy=3; CAP:N overrides, CAP:none requires a reason.",
+        "Router preset balanced is the shared worker palette. Use Tab to choose local-default/local-more/local-complex/local-frontier, or launch oc_local --setting NAME to choose a paired setting."
+      ]
+    },
+    "budget": {
+      "defaultTier": "medium",
+      "description": "Selected primary controls models; budget adjusts work style only",
+      "overrideRules": [
+        "The selected primary agent determines the main model and default coding worker: local-default → Sol MEDIUM + @coding-terra (Terra MEDIUM); local-more → Sol HIGH + @medium (Sol MEDIUM); local-complex → Astra HIGH + @complex (Sol HIGH); local-frontier → Fable MAX + @coding-astra (Astra HIGH). Build/Plan aliases follow the launch setting.",
+        "Use @fast (Terra LOW, read-only) for exploration in every setting. @coding-terra (Default) and @coding-astra (Frontier) are separate writable subagents.",
+        "The stock Task example lists only three names; @complex, @coding-terra and @coding-astra are also valid subagents. Follow the pairing in the primary agent prompt instead of a universal @medium coding default.",
+        "The main agent owns planning, coordination, review, and final judgment. Delegate bounded coding to its paired worker; finish tiny tasks directly when delegation adds overhead.",
+        "When coding requires the main model capability, handle it directly or delegate to a same-model worker. Do not silently switch the main model.",
+        "Fable MAX is reserved for local-frontier or an explicit user selection of @heavy. Other primary settings cannot autonomously call @heavy.",
+        "Provide context and prior attempts to workers, run relevant checks, and report uncertainty.",
+        "Read caps for registered tiers: fast=8, medium=5, complex=5, heavy=3; CAP:N overrides, CAP:none requires a reason.",
+        "Router preset balanced is the shared worker palette. Use Tab to choose local-default/local-more/local-complex/local-frontier, or launch oc_local --setting NAME to choose a paired setting.",
+        "Prefer minimal sufficient work and focused checks."
+      ]
+    },
+    "quality": {
+      "defaultTier": "medium",
+      "description": "Selected primary controls models; quality adjusts work style only",
+      "overrideRules": [
+        "The selected primary agent determines the main model and default coding worker: local-default → Sol MEDIUM + @coding-terra (Terra MEDIUM); local-more → Sol HIGH + @medium (Sol MEDIUM); local-complex → Astra HIGH + @complex (Sol HIGH); local-frontier → Fable MAX + @coding-astra (Astra HIGH). Build/Plan aliases follow the launch setting.",
+        "Use @fast (Terra LOW, read-only) for exploration in every setting. @coding-terra (Default) and @coding-astra (Frontier) are separate writable subagents.",
+        "The stock Task example lists only three names; @complex, @coding-terra and @coding-astra are also valid subagents. Follow the pairing in the primary agent prompt instead of a universal @medium coding default.",
+        "The main agent owns planning, coordination, review, and final judgment. Delegate bounded coding to its paired worker; finish tiny tasks directly when delegation adds overhead.",
+        "When coding requires the main model capability, handle it directly or delegate to a same-model worker. Do not silently switch the main model.",
+        "Fable MAX is reserved for local-frontier or an explicit user selection of @heavy. Other primary settings cannot autonomously call @heavy.",
+        "Provide context and prior attempts to workers, run relevant checks, and report uncertainty.",
+        "Read caps for registered tiers: fast=8, medium=5, complex=5, heavy=3; CAP:N overrides, CAP:none requires a reason.",
+        "Router preset balanced is the shared worker palette. Use Tab to choose local-default/local-more/local-complex/local-frontier, or launch oc_local --setting NAME to choose a paired setting.",
+        "Be thorough about verification; retain the selected main/coding pair."
+      ]
+    },
+    "deep": {
+      "defaultTier": "medium",
+      "description": "Selected primary controls models; deep adjusts work style only",
+      "overrideRules": [
+        "The selected primary agent determines the main model and default coding worker: local-default → Sol MEDIUM + @coding-terra (Terra MEDIUM); local-more → Sol HIGH + @medium (Sol MEDIUM); local-complex → Astra HIGH + @complex (Sol HIGH); local-frontier → Fable MAX + @coding-astra (Astra HIGH). Build/Plan aliases follow the launch setting.",
+        "Use @fast (Terra LOW, read-only) for exploration in every setting. @coding-terra (Default) and @coding-astra (Frontier) are separate writable subagents.",
+        "The stock Task example lists only three names; @complex, @coding-terra and @coding-astra are also valid subagents. Follow the pairing in the primary agent prompt instead of a universal @medium coding default.",
+        "The main agent owns planning, coordination, review, and final judgment. Delegate bounded coding to its paired worker; finish tiny tasks directly when delegation adds overhead.",
+        "When coding requires the main model capability, handle it directly or delegate to a same-model worker. Do not silently switch the main model.",
+        "Fable MAX is reserved for local-frontier or an explicit user selection of @heavy. Other primary settings cannot autonomously call @heavy.",
+        "Provide context and prior attempts to workers, run relevant checks, and report uncertainty.",
+        "Read caps for registered tiers: fast=8, medium=5, complex=5, heavy=3; CAP:N overrides, CAP:none requires a reason.",
+        "Router preset balanced is the shared worker palette. Use Tab to choose local-default/local-more/local-complex/local-frontier, or launch oc_local --setting NAME to choose a paired setting.",
+        "Be thorough about verification; retain the selected main/coding pair."
+      ]
+    }
+  },
+  "fallback": {
+    "global": {
+      "openai": [],
+      "anthropic": []
+    }
+  },
+  "enforcement": {
+    "escalate": {
+      "ladder": [
+        "fast",
+        "medium",
+        "complex"
+      ],
+      "maxAttemptsPerTier": 0,
+      "maxTotalAttempts": 3,
+      "effortBump": false,
+      "variantSteps": "none",
+      "costCeiling": {
+        "multiple": 10
+      }
+    }
+  },
+  "defaultTier": "medium",
+  "experimental": {
+    "verifiedDelegateTool": false
+  }
+}
